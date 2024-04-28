@@ -1,0 +1,1 @@
+titanic#PassengerId#INT#Survived#INT#Pclass#INT#Name#STRING#Sex#STRING#Age#INT#SibSp#INT#Parch#INT#Ticket#STRING#Fare#FLOAT#Cabin#STRING#Embarked#CHAR
