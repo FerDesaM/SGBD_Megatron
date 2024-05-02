@@ -1,8 +1,9 @@
 #include <iostream>
-#include <cstring> 
+#include <fstream>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <string>
-using namespace std;
-
+#include <cstring>
 class Sector {
 private:
     int num_sector;
@@ -11,9 +12,7 @@ private:
 
 public:
     Sector() {}
-    Sector(int num, int bytes){
-        num_sector=num;
-        num_bytes=bytes;
+    Sector(int num, int bytes) : num_sector(num), num_bytes(bytes) {
         data = new char[num_bytes];
     }
     
@@ -24,7 +23,7 @@ public:
     int getSize() const {
         return num_bytes;
     }
-
+    
     const char* getData() const {
         return data;
     }
@@ -32,8 +31,6 @@ public:
     void escribirDatos(const char* newData) {
         memcpy(data, newData, num_bytes);
     }
-
-    
 };
 
 class Pista {
@@ -45,12 +42,13 @@ private:
 public:
     Pista() : num_sectores(0), sectores(nullptr) {}
     
-    Pista(int num_pista,int num_sect, int tam_sec) :pista(num_pista), num_sectores(num_sect) {
+    Pista(int num_pista, int num_sect, int tam_sec) : pista(num_pista), num_sectores(num_sect) {
         sectores = new Sector[num_sectores];
         for (int i = 0; i < num_sectores; ++i) {
             sectores[i] = Sector(i+1, tam_sec);
         }
     }
+    
     Pista(const Pista& other) : num_sectores(other.num_sectores) {
         sectores = new Sector[num_sectores];
         for (int i = 0; i < num_sectores; ++i) {
@@ -71,7 +69,6 @@ public:
         return *this;
     }
     
-    
     Sector& getSector(int index) const {
         return sectores[index];
     }    
@@ -86,14 +83,13 @@ private:
 public:
     Superficie() : num_pistas(0), pistas(nullptr) {}
     
-    Superficie(int num_surper,int num_pist, int num_sect, int tam_sec) : num_surface(num_surper), num_pistas(num_pist) {
+    Superficie(int num_surper, int num_pist, int num_sect, int tam_sec)
+        : num_surface(num_surper), num_pistas(num_pist) {
         pistas = new Pista[num_pistas];
         for (int i = 0; i < num_pistas; ++i) {
-            pistas[i] = Pista(i+1,num_sect, tam_sec);
+            pistas[i] = Pista(i+1, num_sect, tam_sec);
         }
     }
-
-    
 
     Pista& getPista(int index) const {
         return pistas[index];
@@ -113,15 +109,13 @@ public:
     
     Plato(int num_pist, int num_sect, int tam_sec) : Plato() {
         for (int i = 0; i < 2; ++i) {
-            superficie[i] = new Superficie(i,num_pist, num_sect, tam_sec); // Crea nuevas instancias de Superficie
+            superficie[i] = new Superficie(i, num_pist, num_sect, tam_sec); // Crea nuevas instancias de Superficie
         }
     }
 
     Superficie& getSuperficie(int index) {
         return *superficie[index];
     }
-
-    
 };
 
 class DiscoDuro {
@@ -135,7 +129,7 @@ public:
     DiscoDuro(int num_plat, int num_pist, int num_sect,int tam_sect) : num_platos(num_plat) {
         platos = new Plato[num_platos];
         for (int i = 0; i < num_platos; ++i) {
-            platos[i] = Plato(num_pist, num_sect,tam_sect);
+            platos[i] = Plato(num_pist, num_sect, tam_sect);
         }
     }
 
@@ -147,51 +141,91 @@ public:
         return platos[index];
     }
 
-   
-void escribir(int num_sector, int num_pista, int num_superficie, const char* datos) {
-        platos[num_superficie].getSuperficie(num_pista).getPista(num_pista).getSector(num_sector).escribirDatos(datos);
+    void crearCarpeta(const std::string &rutaCarpeta) {
+        if (mkdir(rutaCarpeta.c_str(), 0777) == -1) {
+            std::cerr << "Error al crear la carpeta: " << strerror(errno) << std::endl;
+        } else {
+            std::cout << "Carpeta creada exitosamente: " << rutaCarpeta << std::endl;
+        }
     }
 
-    void leer(int num_sector, int num_pista, int num_superficie, char* buffer) {
-        const char* datos = platos[num_superficie].getSuperficie(num_pista).getPista(num_pista).getSector(num_sector).getData();
-        strncpy(buffer, datos, 511); // Copiar como máximo 511 caracteres para dejar espacio para el carácter nulo terminador
-        buffer[511] = '\0'; // Asegurar que el búfer esté terminado correctamente
+    void crearArchivo(const std::string &rutaArchivo) {
+        std::ofstream archivo(rutaArchivo);
+        std::cout << "Creando archivo: " << rutaArchivo << std::endl;
+        // Lógica para crear un archivo en el sistema de archivos
     }
 
-    void imprimir(int num_sector, int num_pista, int num_superficie) {
-        char buffer[512]; // Buffer para almacenar los datos leídos
-        leer(num_sector, num_pista, num_superficie, buffer);
-        cout << "Datos en el sector " << num_sector << " de la pista " << num_pista << " de la superficie " << num_superficie << ": " << buffer << endl;
+    void crearEstructuraDisco() {
+        std::string carpeta = "discoDuro";
+        mkdir(carpeta.c_str(), 0777);
+
+        for (int plato = 0; plato < num_platos; plato++) {
+            std::string carpetaPlato = carpeta + "/plato_" + std::to_string(plato + 1);
+            mkdir(carpetaPlato.c_str(), 0777);
+
+            for (int superficie = 0; superficie < 2; superficie++) {
+                std::string carpetaSuperficie = carpetaPlato + "/superficie_" + std::to_string(superficie + 1);
+                mkdir(carpetaSuperficie.c_str(), 0777);
+
+                for (int pista = 0; pista <  num_platos; pista++) {
+                    std::string carpetaPista = carpetaSuperficie + "/pista_" + std::to_string(pista + 1);
+                    mkdir(carpetaPista.c_str(), 0777);
+
+                    for (int sector = 0; sector < num_platos; sector++) {
+                        std::string archivoSector = carpetaPista + "/sector_" + std::to_string(sector + 1) + ".txt";
+                        crearArchivo(archivoSector);
+                    }
+                }
+            }
+        }
+        std::cout << "La estructura del disco ha sido creada exitosamente." << std::endl;
+    }
+
+    bool sectorDisponible(const std::string &sector) {
+        std::ifstream archivo(sector);
+
+        if (!archivo.is_open()) {
+            std::cout << "No existe ese sector" << std::endl;
+            // manejar error
+        }
+
+        std::string linea;
+        while (getline(archivo, linea)) {
+            if (!linea.empty() && linea.find("#") != std::string::npos) {
+                // El archivo contiene contenido y ya está ocupado
+                archivo.close();
+                return false;
+            }
+        }
+
+        // Terminó el archivo sin encontrar contenido, está disponible
+        archivo.close();
+        return true;
     }
 };
 
 int main() {
     int num_platos, num_pistas, tam_pistas, num_sectores;
     
-    cout << "Ingrese el número de platos: ";
-    cin >> num_platos;
+    std::cout << "Ingrese el número de platos: ";
+    std::cin >> num_platos;
     
-    cout << "Ingrese el número de pistas por superficie: ";
-    cin >> num_pistas;
+    std::cout << "Ingrese el número de pistas por superficie: ";
+    std::cin >> num_pistas;
     
-    cout << "Ingrese el número de sectores por pista: ";
-    cin >> num_sectores;
+    std::cout << "Ingrese el número de sectores por pista: ";
+    std::cin >> num_sectores;
     
-    cout << "Ingrese el tamaño de los sectores (en bytes): ";
-    cin >> tam_pistas;
+    std::cout << "Ingrese el tamaño de los sectores (en bytes): ";
+    std::cin >> tam_pistas;
     
     DiscoDuro disco(num_platos, num_pistas, num_sectores, tam_pistas);
     char datos[512] = "Primera prueba de ingreso de valores en un disco"; // Datos a escribir en el disco
-
-    // Escribir los datos en el sector 3 de la pista 5 de la superficie 1
-    disco.escribir(3, 5, 1, datos);
-
-    // Leer los datos del sector 3 de la pista 5 de la superficie 1
-    char datos_leidos[512];
-    disco.leer(3, 5, 1, datos_leidos);
-
-    // Imprimir los datos del sector 3 de la pista 5 de la superficie 1
-    disco.imprimir(3, 5, 1);
-
+    
+    // Crear la estructura del disco
+    disco.crearEstructuraDisco();
+    
+    // Aquí puedes agregar las funcionalidades adicionales que necesites para tu aplicación
+    
     return 0;
 }
